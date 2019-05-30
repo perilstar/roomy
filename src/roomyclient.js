@@ -28,7 +28,7 @@ class RoomyClient extends AkairoClient {
   }
 
   async loadData() {
-    let guildIDs = await this.db.getGuildIDs();
+    let guildIDs = this.guilds.keys();
     for (let guildID of guildIDs) {
       let server = new Server(this, guildID);
       this.servers[guildID] = server;
