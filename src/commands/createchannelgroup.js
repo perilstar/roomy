@@ -9,12 +9,12 @@ class CreateChannelGroupCommand extends Command {
       userPermissions: ['ADMINISTRATOR'],
       args: [
         {
-          id: 'sourceChannel',
-          type: 'string',
-        },
-        {
           id: 'groupName',
           type: 'string'
+        },
+        {
+          id: 'sourceChannel',
+          type: 'string',
         },
         {
           id: 'prefix',
@@ -29,11 +29,11 @@ class CreateChannelGroupCommand extends Command {
   }
 
   async exec(message, args) {
-    if (!args.sourceChannel) {
-      return message.channel.send(`Error: Missing argument: \`sourceChannel\`. Use r!help for commands.`);
-    }
     if (!args.groupName) {
       return message.channel.send(`Error: Missing argument: \`groupName\`. Use r!help for commands.`);
+    }
+    if (!args.sourceChannel) {
+      return message.channel.send(`Error: Missing argument: \`sourceChannel\`. Use r!help for commands.`);
     }
     if (!args.prefix) {
       return message.channel.send(`Error: Missing argument: \`prefix\`. Use r!help for commands.`);
@@ -42,19 +42,19 @@ class CreateChannelGroupCommand extends Command {
       return message.channel.send(`Error: Missing argument: \`maxChannels\`. Use r!help for commands.`);
     }
 
-    if (!message.guild.channels.has(args.sourceChannel)) {
-      return message.channel.send(`Error: Channel \`${args.sourceChannel}\` does not exist!`);
-    }
-    if (message.guild.channels.get(args.sourceChannel).type != 'voice') {
-      return message.channel.send(`Error: \`${args.sourceChannel}\` is not a voice channel!`);
-    }
-
     if (this.client.getServer(message.guild.id).getChannelGroup(args.groupName)) {
       return message.channel.send(`Error: Channel group \`${args.groupName}\` already exists!`);
     }
     let cg = this.client.getServer(message.guild.id).getChannelGroupByID(args.sourceChannel)
     if (cg) {
       return message.channel.send(`Error: Channel group \`${cg.groupName}\` already contains the source channel you chose!`);
+    }
+
+    if (!message.guild.channels.has(args.sourceChannel)) {
+      return message.channel.send(`Error: Channel \`${args.sourceChannel}\` does not exist!`);
+    }
+    if (message.guild.channels.get(args.sourceChannel).type != 'voice') {
+      return message.channel.send(`Error: \`${args.sourceChannel}\` is not a voice channel!`);
     }
 
     await this.client.getServer(message.guild.id).addChannelGroup(
