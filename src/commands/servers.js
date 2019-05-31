@@ -11,8 +11,7 @@ class ServersCommand extends Command {
   }
 
   async exec(message) {
-    let servers = await this.client.db.getGuildIDs();
-    let serverCount = servers.length;
+    let serverCount = await this.client.guilds.size;
     return message.channel.send("Servers: " + serverCount);
   }
 }
