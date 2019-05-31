@@ -14,7 +14,7 @@ class HelpCommand extends Command {
     let avatarURL = await this.client.fetchUser('148611805445357569').avatarURL;
 
     let embed = new Discord.RichEmbed()
-      .setColor('#6e88c6')
+      .setColor('#348bbe')
       .setTitle('Roomy - Rooms management Discord bot')
       .setURL('https://github.com/perilstar/roomy')
       .setThumbnail(this.client.user.avatarURL)
