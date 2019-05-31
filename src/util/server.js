@@ -42,18 +42,14 @@ class Server {
   }
 
   async removeChannelFromGroup(groupName, channelID) {
+    this.channelGroups[groupName].removeChannelFromList(channelID);
     await this.channelGroups[groupName].removeChannel(channelID);
     await this.save();
   }
 
-  async cleanUpChannelsInGroup(groupName) {
-    // Loop through all but the last channel in the list
-    for(let i = 0; i < this.channelGroups[groupName].channels.length - 1; i++) {
-      // Delete any empty channels we see
-      if (!this.channelGroups[groupName].channels[i].members.size) {
-        await this.removeChannelFromGroup(groupName, this.channelGroups[groupName].channels[i].id);
-      }
-    }
+  async adjustChannelsInGroup(groupName, addAllowed) {
+    await this.getChannelGroup(groupName).adjustChannels(addAllowed);
+    await this.save();
   }
 
   async save() {
@@ -92,7 +88,7 @@ class Server {
         );
       }
 
-      await this.cleanUpChannelsInGroup(groupName);
+      await this.adjustChannelsInGroup(groupName, true);
     }
   }
 }

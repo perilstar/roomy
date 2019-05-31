@@ -40,16 +40,24 @@ class ChannelGroup {
   async removeChannel(channelID) {
     let index = this.channels.findIndex((channel) => channel.id == channelID);
 
-    let channelIDs = this.channels[index].parent.children.keys();
-    for (let channelID of channelIDs) {
-      let channel = this.guild.channels.get(channelID);
-      if (channel.position > this.channels[index].position) {
-        await channel.edit({position: channel.position - 1});
+    if (index != -1) {
+      let channelIDs = this.channels[index].parent.children.keys();
+      for (let channelID of channelIDs) {
+        let channel = this.guild.channels.get(channelID);
+        if (channel.position > this.channels[index].position) {
+          await channel.edit({position: channel.position - 1});
+        }
       }
+  
+      await this.channels[index].delete();
     }
+  }
 
-    await this.channels[index].delete();
-    // don't need to delete from the channels array here, as client_channelDelete.js takes care of that
+  removeChannelFromList(channelID) {
+    let index = this.channels.findIndex((channel) => channel.id == channelID);
+    if (index != -1) {
+      this.channels.splice(channelID, 1);
+    }
   }
 
   async renameChannels() {
@@ -60,7 +68,27 @@ class ChannelGroup {
     }
   }
 
+  getLastChannel() {
+    return this.channels[this.channels.length - 1];
+  }
+
+  async adjustChannels(addAllowed) {
+    // Loop through all but the last channel in the list backwards
+    for(let i = this.channels.length - 2; i >= 0; i--) {
+      // Delete any empty channels we see, as long as there are multiple channels
+      if (!this.channels[i].members.size) {
+        await this.removeChannel(this.channels[i].id);
+      }
+    }
+    // If needed, create a new channel
+    if (addAllowed && this.getLastChannel().members.size && this.channels.length < this.maxChannels) {
+      await this.addChannel()
+    }
+    await this.renameChannels();
+  }
+
   getStorageObject() {
+    // console.log(this.channels.length);
     return {
       prefix: this.prefix,
       maxChannels: this.maxChannels,
