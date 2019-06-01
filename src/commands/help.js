@@ -20,10 +20,10 @@ class HelpCommand extends Command {
       .setThumbnail(this.client.user.avatarURL)
       .addField('Commands', '--------------')
       .addField(
-        'r!ccg [groupName] [sourceChannel] [prefix] [maxChannels]', 
+        'r!ccg [groupName] [sourceChannelID] [prefix] [maxChannels]', 
         [
           'Creates a channel group named `[groupName]`, copying data',
-          'from `[sourceChannel]`, with channel prefix `[prefix]`, that',
+          'from `[sourceChannelID]`, with channel prefix `[prefix]`, that',
           'can have up to `[maxChannels]` channels.'
         ]
       )
