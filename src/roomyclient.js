@@ -10,7 +10,8 @@ class RoomyClient extends AkairoClient {
       ownerID: '148611805445357569',
       prefix: 'r!',
       commandDirectory: './src/commands/',
-      listenerDirectory: './src/listeners/'
+      listenerDirectory: './src/listeners/',
+      allowMention: true
     }, {
       disableEveryone: true
     });
