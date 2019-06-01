@@ -10,7 +10,7 @@ Creates a channel group named [groupName], copying data from [sourceChannelID], 
 `r!lcg`  
 Lists all channel groups by group name.
 
-`r!dcg`  
+`r!dcg [groupName]`  
 Deletes a channel group by group name.
 
 ## Donate
