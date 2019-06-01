@@ -1,5 +1,6 @@
 # Roomy
-*Rooms management Discord bot*
+*Rooms management Discord bot*  
+[Invite Link](https://discordapp.com/oauth2/authorize?client_id=584129760242696193&permissions=67600&scope=bot)
 
 Roomy is a bot that automatically creates voice channels when others have people in them.
 
