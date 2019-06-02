@@ -1,5 +1,3 @@
-// require('discord.js');
-
 class ChannelGroup {
   constructor(guild, groupName, prefix, maxChannels, channels) {
     this.guild = guild;

@@ -1,6 +1,4 @@
 const { Command } = require('discord-akairo');
-const storage = require('node-persist');
-const ChannelGroup = require('../util/channel_group');
 
 class DeleteChannelGroupCommand extends Command {
   constructor() {
