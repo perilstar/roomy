@@ -1,6 +1,4 @@
 const { Command } = require('discord-akairo');
-const storage = require('node-persist');
-const ChannelGroup = require('../util/channel_group');
 const Discord = require('discord.js');
 
 class HelpCommand extends Command {
@@ -11,7 +9,7 @@ class HelpCommand extends Command {
   }
 
   async exec(message, args) {
-    let avatarURL = await this.client.fetchUser('148611805445357569').avatarURL;
+    let peril = await this.client.fetchUser('148611805445357569');
 
     let embed = new Discord.RichEmbed()
       .setColor('#348bbe')
@@ -31,7 +29,7 @@ class HelpCommand extends Command {
       .addField('r!dcg', 'Deletes a channel group by group name.')
       .addBlankField()
       .addField('Want to help support me? Donate:', 'https://paypal.me/perilstar')
-      .setFooter('v1.0.0 by perilstar');
+      .setFooter(`v${process.env.npm_package_version} by perilstar`, peril.avatarURL);
 
     return message.channel.send(embed);
   }
