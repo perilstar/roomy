@@ -76,9 +76,8 @@ class Server {
           data.maxChannels,
           channels
         );
+        await this.adjustChannelsInGroup(groupName, true);
       }
-
-      await this.adjustChannelsInGroup(groupName, true);
     }
   }
 }
