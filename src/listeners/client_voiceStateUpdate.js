@@ -17,19 +17,17 @@ class VoiceStateUpdateListener extends Listener {
     if (oldVC) {
       let cg = this.client.getServer(oldVC.guild.id).getChannelGroupByID(oldVC.id);
       if (cg) {
-        await this.client.getServer(oldVC.guild.id).adjustChannelsInGroup(cg.groupName, false);
+        this.client.getServer(oldVC.guild.id).adjustChannelsInGroup(cg.groupName);
       }
     }
 
     if (newVC) {
       let cg = this.client.getServer(newVC.guild.id).getChannelGroupByID(newVC.id);
       if (cg) {
-        await this.client.getServer(newVC.guild.id).adjustChannelsInGroup(cg.groupName, true);
+        this.client.getServer(newVC.guild.id).adjustChannelsInGroup(cg.groupName);
       }
     }
   }
-
-  // async handleDeleteChannel(channelGroup)
 }
 
 module.exports = VoiceStateUpdateListener;

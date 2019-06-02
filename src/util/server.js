@@ -4,7 +4,8 @@ class Server {
   constructor(client, id) {
     this.client = client;
     this.id = id;
-    this.channelGroups = {}
+    this.channelGroups = {};
+    this.adjustingChannelGroups = [];
   }
 
   async addChannelGroup(groupName, prefix, maxChannels, sourceChannelID) {
@@ -36,19 +37,8 @@ class Server {
     await this.save();
   }
 
-  async addChannelToGroup(groupName) {
-    await this.channelGroups[groupName].addChannel();
-    await this.save();
-  }
-
-  async removeChannelFromGroup(groupName, channelID) {
-    this.channelGroups[groupName].removeChannelFromList(channelID);
-    await this.channelGroups[groupName].removeChannel(channelID);
-    await this.save();
-  }
-
-  async adjustChannelsInGroup(groupName, addAllowed) {
-    await this.getChannelGroup(groupName).adjustChannels(addAllowed);
+  async adjustChannelsInGroup(groupName) {
+    await this.getChannelGroup(groupName).adjustChannels();
     await this.save();
   }
 

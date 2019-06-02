@@ -8,6 +8,8 @@ class ChannelGroup {
     this.maxChannels = maxChannels;
     this.channels = channels;
 
+    this.adjusting = false;
+
     let source = this.channels[0];
     this.perms = source.permissionOverwrites;
     this.bitrate = source.bitrate * 1000;
@@ -45,18 +47,11 @@ class ChannelGroup {
       for (let channelID of channelIDs) {
         let channel = this.guild.channels.get(channelID);
         if (channel.position > this.channels[index].position) {
-          await channel.edit({position: channel.position - 1});
+          channel.edit({position: channel.position - 1});
         }
       }
   
       await this.channels[index].delete();
-    }
-  }
-
-  removeChannelFromList(channelID) {
-    let index = this.channels.findIndex((channel) => channel.id == channelID);
-    if (index != -1) {
-      this.channels.splice(channelID, 1);
     }
   }
 
@@ -72,7 +67,24 @@ class ChannelGroup {
     return this.channels[this.channels.length - 1];
   }
 
-  async adjustChannels(addAllowed) {
+  channelsNeedAdjusting() {
+    for (let i = 0; i < this.channels.length - 1; i++) {
+      if (!this.channels[i].members.size) {
+        return true;
+      }
+    }
+    if (this.channels[this.channels.length - 1].members.size && this.channels.length < this.maxChannels) {
+      return true;
+    }
+    return false;
+  }
+
+  async adjustChannels() {
+    if (this.adjusting == true) {
+      return;
+    }
+    this.adjusting = true;
+    
     // Loop through all but the last channel in the list backwards
     for(let i = this.channels.length - 2; i >= 0; i--) {
       // Delete any empty channels we see, as long as there are multiple channels
@@ -81,14 +93,19 @@ class ChannelGroup {
       }
     }
     // If needed, create a new channel
-    if (addAllowed && this.getLastChannel().members.size && this.channels.length < this.maxChannels) {
+    if (this.getLastChannel().members.size && this.channels.length < this.maxChannels) {
       await this.addChannel()
     }
     await this.renameChannels();
+    this.adjusting = false;
+
+    // Needed in case someone joined or left a channel while we were adjusting
+    if (this.channelsNeedAdjusting()) {
+      this.adjustChannels();
+    }
   }
 
   getStorageObject() {
-    // console.log(this.channels.length);
     return {
       prefix: this.prefix,
       maxChannels: this.maxChannels,
