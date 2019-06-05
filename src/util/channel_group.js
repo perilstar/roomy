@@ -33,9 +33,7 @@ class ChannelGroup {
         // Yeah, I know we're using setPosition on removeChannel(). I know it'd be nice to have it the same way on
         // both, but discord.js stable is kinda inconsistent right now, so we're gonna be doing this, because it *works*
         // this way, and gives me a headache the other way.
-        console.log(`shifting ${channel.name} from ${channel.position}`);
         await channel.edit({position: channel.position + 1});
-        console.log(`to ${channel.position}`);
       }
     }
 
@@ -51,9 +49,7 @@ class ChannelGroup {
       for (let channelID of channelIDs) {
         let channel = this.guild.channels.get(channelID);
         if (channel.position > this.channels[index].position) {
-          console.log(`shifting ${channel.name} from ${channel.position}`);
           await channel.edit({position: channel.position - 1});
-          console.log(`to ${channel.position}`);
         }
       }
 
