@@ -1,6 +1,6 @@
 {
   "name": "roomy",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Rooms management Discord bot",
   "main": "index.js",
   "scripts": {
