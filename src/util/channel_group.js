@@ -12,15 +12,16 @@ class ChannelGroup {
     this.perms = source.permissionOverwrites;
     this.bitrate = source.bitrate * 1000;
     this.maxUsers = source.userLimit;
-    this.category = source.parent;
+    this.categoryID = source.parent.id;
   }
 
   async addChannel() {
+
     let channelData = {
       type: 'voice',
       bitrate: this.bitrate,
       userLimit: this.maxUsers,
-      parent: this.category,
+      parent: this.guild.channels.get(this.categoryID),
       permissionOverwrites: this.perms,
       position: this.channels[this.channels.length - 1].position + 1
     };
@@ -29,6 +30,9 @@ class ChannelGroup {
     for (let channelID of channelIDs) {
       let channel = this.guild.channels.get(channelID);
       if (channel.position >= channelData.position) {
+        // Yeah, I know we're using setPosition on removeChannel(). I know it'd be nice to have it the same way on
+        // both, but discord.js stable is kinda inconsistent right now, so we're gonna be doing this, because it *works*
+        // this way, and gives me a headache the other way.
         await channel.edit({position: channel.position + 1});
       }
     }
@@ -45,15 +49,22 @@ class ChannelGroup {
       for (let channelID of channelIDs) {
         let channel = this.guild.channels.get(channelID);
         if (channel.position > this.channels[index].position) {
-          channel.edit({position: channel.position - 1});
+          await channel.setPosition(-1, true);
         }
       }
-  
-      await this.channels[index].delete();
+
+      let channel = this.channels[index];
+
+      // Yes, it's necessary that we do this here too, even though client_channelDelete handles this.
+      // Otherwise, we couldn't really await this function. It's not a problem that we're doing it
+      // twice though, because both times we're checking if index is -1 or not
+      this.channels.splice(index, 1);
+      await channel.delete();
+
     }
   }
 
-  async renameChannels() {
+  renameChannels() {
     for(let i = 0; i < this.channels.length; i++) {
       if (this.channels[i].name != `${this.prefix} ${i + 1}`) {
         this.channels[i].edit({name: `${this.prefix} ${i + 1}`});
@@ -90,17 +101,20 @@ class ChannelGroup {
         await this.removeChannel(this.channels[i].id);
       }
     }
+    // console.log(this.guild.channels.get(this.categoryID).children);
+
     // If needed, create a new channel
     if (this.getLastChannel().members.size && this.channels.length < this.maxChannels) {
       await this.addChannel()
     }
-    await this.renameChannels();
+    this.renameChannels();
     this.adjusting = false;
 
     // Needed in case someone joined or left a channel while we were adjusting
     if (this.channelsNeedAdjusting()) {
       this.adjustChannels();
     }
+    // console.log(this.guild.channels.get(this.categoryID).children);
   }
 
   getStorageObject() {
