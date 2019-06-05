@@ -101,7 +101,6 @@ class ChannelGroup {
         await this.removeChannel(this.channels[i].id);
       }
     }
-    // console.log(this.guild.channels.get(this.categoryID).children);
 
     // If needed, create a new channel
     if (this.getLastChannel().members.size && this.channels.length < this.maxChannels) {
@@ -114,7 +113,6 @@ class ChannelGroup {
     if (this.channelsNeedAdjusting()) {
       this.adjustChannels();
     }
-    // console.log(this.guild.channels.get(this.categoryID).children);
   }
 
   getStorageObject() {
