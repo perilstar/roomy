@@ -13,7 +13,6 @@ class ChannelDeleteListener extends Listener {
     if (cg) {
       let index = cg.channels.indexOf(channel);
       if (index != -1) {
-        console.log(`splicing ${index}`);
         cg.channels.splice(index, 1);
       }
       await cg.adjustChannels();
