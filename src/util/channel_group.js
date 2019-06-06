@@ -95,7 +95,6 @@ class ChannelGroup {
         await this.removeChannel(this.channels[i].id);
       }
     }
-    
     // If needed, create a new channel
     if (this.getLastChannel().members.size && this.channels.length < this.maxChannels) {
       await this.addChannel()
