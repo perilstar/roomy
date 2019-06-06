@@ -6,8 +6,6 @@ class ChannelGroup {
     this.maxChannels = maxChannels;
     this.channels = channels;
 
-    this.adjusting = false;
-
     let source = this.channels[0];
     this.perms = source.permissionOverwrites;
     this.bitrate = source.bitrate * 1000;
@@ -89,10 +87,6 @@ class ChannelGroup {
   }
 
   async adjustChannels() {
-    if (this.adjusting == true) {
-      return;
-    }
-    this.adjusting = true;
     
     // Loop through all but the last channel in the list backwards
     for(let i = this.channels.length - 2; i >= 0; i--) {
@@ -101,20 +95,12 @@ class ChannelGroup {
         await this.removeChannel(this.channels[i].id);
       }
     }
-    // console.log(this.guild.channels.get(this.categoryID).children);
-
+    
     // If needed, create a new channel
     if (this.getLastChannel().members.size && this.channels.length < this.maxChannels) {
       await this.addChannel()
     }
     this.renameChannels();
-    this.adjusting = false;
-
-    // Needed in case someone joined or left a channel while we were adjusting
-    if (this.channelsNeedAdjusting()) {
-      this.adjustChannels();
-    }
-    // console.log(this.guild.channels.get(this.categoryID).children);
   }
 
   getStorageObject() {

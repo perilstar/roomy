@@ -5,7 +5,7 @@ class Server {
     this.client = client;
     this.id = id;
     this.channelGroups = {};
-    this.adjustingChannelGroups = [];
+    this.adjustingChannelGroups = false;
   }
 
   async addChannelGroup(groupName, prefix, maxChannels, sourceChannelID) {
@@ -39,6 +39,33 @@ class Server {
 
   async adjustChannelsInGroup(groupName) {
     await this.getChannelGroup(groupName).adjustChannels();
+    await this.save();
+  }
+
+  channelGroupsNeedAdjusting() {
+    for (let groupName in this.channelGroups) {
+      if (this.getChannelGroup(groupName).channelsNeedAdjusting()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  async adjustChannelGroups() {
+    if (this.adjustingChannelGroups) {
+      return;
+    }
+    this.adjustingChannelGroups = true;
+
+    for (let groupName in this.channelGroups) {
+      await this.getChannelGroup(groupName).adjustChannels();
+    }
+
+    this.adjustingChannelGroups = false;
+    // Needed in case someone joined or left a channel while we were adjusting
+    if (this.channelGroupsNeedAdjusting()) {
+      this.adjustChannelGroups();
+    }
     await this.save();
   }
 
