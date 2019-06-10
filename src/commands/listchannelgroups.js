@@ -5,7 +5,7 @@ class ListChannelGroupsCommand extends Command {
     super('listchannelgroups', {
       aliases: ['listchannelgroups', 'listchannelgroup', 'lcg'],
       channelRestriction: 'guild',
-      userPermissions: ['ADMINISTRATOR']
+      userPermissions: ['MANAGE_CHANNELS']
     });
   }
 

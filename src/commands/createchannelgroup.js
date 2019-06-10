@@ -6,7 +6,7 @@ class CreateChannelGroupCommand extends Command {
       aliases: ['createchannelgroup', 'ccg'],
       split: 'quoted',
       channelRestriction: 'guild',
-      userPermissions: ['ADMINISTRATOR'],
+      userPermissions: ['MANAGE_CHANNELS'],
       args: [
         {
           id: 'groupName',

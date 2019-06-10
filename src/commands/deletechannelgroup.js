@@ -6,7 +6,7 @@ class DeleteChannelGroupCommand extends Command {
       aliases: ['deletechannelgroup', 'dcg'],
       split: 'quoted',
       channelRestriction: 'guild',
-      userPermissions: ['ADMINISTRATOR'],
+      userPermissions: ['MANAGE_CHANNELS'],
       args: [
         {
           id: 'groupName',
