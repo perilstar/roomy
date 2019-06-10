@@ -4,7 +4,9 @@
 
 Roomy is a bot that automatically creates voice channels when others have people in them.
 
-## Commands
+## Commands  
+(Must have "Manage Channels" permission to use these commands)
+
 `r!ccg [groupName] [sourceChannelID] [prefix] [maxChannels]`  
 Creates a channel group named [groupName], copying data from [sourceChannelID], with channel prefix [prefix], that can have up to [maxChannels] channels.
 
