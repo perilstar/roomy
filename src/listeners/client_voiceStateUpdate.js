@@ -15,15 +15,15 @@ class VoiceStateUpdateListener extends Listener {
     let newVC = newUser.voiceChannel;
 
     if (oldVC) {
-      let cg = this.client.getServer(oldVC.guild.id).getChannelGroupByID(oldVC.id);
-      if (cg) {
+      let channelGroup = this.client.getServer(oldVC.guild.id).getChannelGroupByID(oldVC.id);
+      if (channelGroup) {
         this.client.getServer(oldVC.guild.id).adjustChannelGroups();
       }
     }
 
     if (newVC) {
-      let cg = this.client.getServer(newVC.guild.id).getChannelGroupByID(newVC.id);
-      if (cg) {
+      let channelGroup = this.client.getServer(newVC.guild.id).getChannelGroupByID(newVC.id);
+      if (channelGroup) {
         this.client.getServer(newVC.guild.id).adjustChannelGroups();
       }
     }
