@@ -10,53 +10,30 @@ class ChannelGroup {
     this.perms = source.permissionOverwrites;
     this.bitrate = source.bitrate * 1000;
     this.maxUsers = source.userLimit;
-    this.categoryID = source.parent.id;
+    this.parent = source.parent;
   }
 
-  async addChannel() {
-
+  async addChannel(position) {
     let channelData = {
       type: 'voice',
       bitrate: this.bitrate,
       userLimit: this.maxUsers,
-      parent: this.guild.channels.get(this.categoryID),
+      parent: this.parent,
       permissionOverwrites: this.perms,
-      position: this.channels[this.channels.length - 1].position + 1
+      position: position
     };
 
-    let channelIDs = channelData.parent.children.keys();
-    for (let channelID of channelIDs) {
-      let channel = this.guild.channels.get(channelID);
-      if (channel.position >= channelData.position) {
-        await channel.edit({position: channel.position + 1});
-      }
-    }
-
-    let newChannel = await this.guild.createChannel(`${this.prefix} ${this.channels.length + 1}`, channelData)
-    this.channels.push(newChannel);
+    return this.guild.createChannel(`${this.prefix} ${this.channels.length + 1}`, channelData)
   }
 
-  async removeChannel(channelID) {
-    let index = this.channels.findIndex((channel) => channel.id == channelID);
+  async removeChannel(channel) {
+    if (!channel) return;
 
-    if (index != -1) {
-      let channelIDs = this.channels[index].parent.children.keys();
-      for (let channelID of channelIDs) {
-        let channel = this.guild.channels.get(channelID);
-        if (channel.position > this.channels[index].position) {
-          await channel.edit({position: channel.position - 1});
-        }
-      }
-
-      let channel = this.channels[index];
-
-      // Yes, it's necessary that we do this here too, even though client_channelDelete handles this.
-      // Otherwise, we couldn't really await this function. It's not a problem that we're doing it
-      // twice though, because both times we're checking if index is -1 or not
-      this.channels.splice(index, 1);
-      await channel.delete();
-
-    }
+    // Yes, it's necessary that we do this here too, even though client_channelDelete handles this.
+    // Otherwise, we couldn't really await this function. It's not a problem that we're doing it
+    // twice though, because both times we're checking if index is -1 or not
+    this.channels.splice(this.channels.indexOf(channel), 1);
+    channel.delete();
   }
 
   renameChannels() {
@@ -65,10 +42,6 @@ class ChannelGroup {
         this.channels[i].edit({name: `${this.prefix} ${i + 1}`});
       }
     }
-  }
-
-  getLastChannel() {
-    return this.channels[this.channels.length - 1];
   }
 
   channelsNeedAdjusting() {
@@ -83,20 +56,82 @@ class ChannelGroup {
     return false;
   }
 
-  async adjustChannels() {
-    
+  stageAddChannel(shiftData, deletedChannels) {
+    let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
+    let lastRemainingChannel = remainingChannels[remainingChannels.length - 1];
+
+    let shiftOffset = (shiftData[lastRemainingChannel.id] || 0)
+    let newPosition = lastRemainingChannel ? lastRemainingChannel.position + shiftOffset + 1 : 0;
+
+    let siblingChannels = this.parent.children;
+    siblingChannels.forEach(channelToShift => {
+      if (channelToShift.position + (shiftData[channelToShift.id] || 0) >= newPosition) {
+        shiftData[channelToShift.id] = (shiftData[channelToShift.id] || 0) + 1;
+      }
+    });
+  }
+
+  stageRemoveChannel(channel, shiftData, deletedChannels) {
+    if (!channel) return;
+    if (deletedChannels.includes(channel)) return;
+    let siblingChannels = this.parent.children;
+    siblingChannels.forEach(channelToShift => {
+      if (channelToShift.position + (shiftData[channelToShift.id] || 0) > channel.position) {
+        shiftData[channelToShift.id] = (shiftData[channelToShift.id] || 0) - 1;
+      }
+    });
+    deletedChannels.push(channel);
+  }
+
+  stageAdjustChannels({shiftData, addToGroups, deletedChannels}) {
     // Loop through all but the last channel in the list backwards
     for(let i = this.channels.length - 2; i >= 0; i--) {
-      // Delete any empty channels we see, as long as there are multiple channels
+      // Stage deletion for any empty channels we see, as long as there are multiple channels
       if (!this.channels[i].members.size) {
-        await this.removeChannel(this.channels[i].id);
+        this.stageRemoveChannel(this.channels[i], shiftData, deletedChannels);
       }
     }
+
     // If needed, create a new channel
-    if (this.getLastChannel().members.size && this.channels.length < this.maxChannels) {
-      await this.addChannel()
+    let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
+    let lastRemainingChannel = remainingChannels[remainingChannels.length - 1];
+    if (!lastRemainingChannel || (lastRemainingChannel.members.size && remainingChannels.length < this.maxChannels)) {
+      this.stageAddChannel(shiftData, deletedChannels);
+      addToGroups.push(this.groupName);
     }
-    this.renameChannels();
+
+    return {shiftData, addToGroups, deletedChannels};
+  }
+
+  async adjustChannels({shiftData, addToGroups, deletedChannels}) {
+    let del = deletedChannels.map(channel => {
+      this.removeChannel(channel);
+    });
+
+    let shifts = this.parent.children.map(channel => {
+      let shift = shiftData[channel.id];
+      if (shift) {
+        return channel.edit({position: channel.position + shift});
+      }
+    });
+
+    let add;
+    if (addToGroups.includes(this.groupName)) {
+      let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
+      let lastRemainingChannel = remainingChannels[remainingChannels.length - 1];
+      let shiftOffset = (shiftData[lastRemainingChannel.id] || 0)
+      let newPosition = lastRemainingChannel ? lastRemainingChannel.position + shiftOffset + 1 : 0;
+      add = this.addChannel(newPosition);
+    }
+    
+    let promises = [].concat(add, del, shifts);
+
+    await Promise.all(promises)
+      .then(values => {
+        let newChannel = values[0];
+        if (newChannel) this.channels.push(newChannel);
+      });
+    await this.renameChannels(deletedChannels);
   }
 
   getStorageObject() {

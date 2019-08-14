@@ -17,14 +17,14 @@ class VoiceStateUpdateListener extends Listener {
     if (oldVC) {
       let channelGroup = this.client.getServer(oldVC.guild.id).getChannelGroupByID(oldVC.id);
       if (channelGroup) {
-        this.client.getServer(oldVC.guild.id).adjustChannelGroups();
+        this.client.getServer(oldVC.guild.id).queueAdjustChannelGroups();
       }
     }
 
     if (newVC) {
       let channelGroup = this.client.getServer(newVC.guild.id).getChannelGroupByID(newVC.id);
       if (channelGroup) {
-        this.client.getServer(newVC.guild.id).adjustChannelGroups();
+        this.client.getServer(newVC.guild.id).queueAdjustChannelGroups();
       }
     }
   }

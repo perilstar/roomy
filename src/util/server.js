@@ -36,12 +36,7 @@ class Server {
     delete this.channelGroups[groupName];
     await this.save();
   }
-
-  async adjustChannelsInGroup(groupName) {
-    await this.getChannelGroup(groupName).adjustChannels();
-    await this.save();
-  }
-
+  
   channelGroupsNeedAdjusting() {
     for (let groupName in this.channelGroups) {
       if (this.getChannelGroup(groupName).channelsNeedAdjusting()) {
@@ -51,20 +46,42 @@ class Server {
     return false;
   }
 
-  async adjustChannelGroups() {
+  stageAdjustChannelGroups(adjustments) {
+    for (let groupName in this.channelGroups) {
+      adjustments = this.getChannelGroup(groupName).stageAdjustChannels(adjustments);
+    }
+    return adjustments;
+  }
+
+  async adjustChannelGroups(adjustments) {
+    let promises = [];
+
+    for (let groupName in this.channelGroups) {
+      promises.push(this.getChannelGroup(groupName).adjustChannels(adjustments));
+    }
+
+    await Promise.all(promises);
+  }
+
+  async queueAdjustChannelGroups() {
     if (this.adjustingChannelGroups) {
       return;
     }
     this.adjustingChannelGroups = true;
 
-    for (let groupName in this.channelGroups) {
-      await this.getChannelGroup(groupName).adjustChannels();
-    }
+    let adjustments = {
+      shiftData: {},
+      addToGroups: [],
+      deletedChannels: []
+    };
+
+    adjustments = this.stageAdjustChannelGroups(adjustments);
+    await this.adjustChannelGroups(adjustments);
 
     this.adjustingChannelGroups = false;
     // Needed in case someone joined or left a channel while we were adjusting
     if (this.channelGroupsNeedAdjusting()) {
-      this.adjustChannelGroups();
+      this.queueAdjustChannelGroups();
     }
     await this.save();
   }
@@ -103,9 +120,9 @@ class Server {
           data.maxChannels,
           channels
         );
-        await this.adjustChannelsInGroup(groupName);
       }
     }
+    this.queueAdjustChannelGroups();
   }
 }
 
