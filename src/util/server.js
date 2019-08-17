@@ -96,7 +96,7 @@ class Server {
 
   async queueAdjustCategory(categoryID) {
     if (this.categoryTimers[categoryID]) clearTimeout(this.categoryTimers[categoryID]);
-    this.categoryTimers[categoryID] = setTimeout(() => this.adjustCategoryImmediately(categoryID), 2000);
+    this.categoryTimers[categoryID] = setTimeout(() => this.adjustCategoryImmediately(categoryID), 1500);
   }
 
   async adjustAllCategoriesImmediately() {
