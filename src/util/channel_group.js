@@ -13,6 +13,12 @@ class ChannelGroup {
     this.parent = source.parent;
   }
 
+  getSiblingChannels() {
+    if (this.parent) return this.parent.children;
+    // Now for channels outside of a category:
+    return this.guild.channels.filter(channel=>!channel.parent && channel.type != "category");
+  }
+
   async addChannel(position) {
     let channelData = {
       type: 'voice',
@@ -63,8 +69,7 @@ class ChannelGroup {
     let shiftOffset = (shiftData[lastRemainingChannel.id] || 0)
     let newPosition = lastRemainingChannel ? lastRemainingChannel.position + shiftOffset + 1 : 0;
 
-    let siblingChannels = this.parent.children;
-    siblingChannels.forEach(channelToShift => {
+    this.getSiblingChannels().forEach(channelToShift => {
       if (channelToShift.position + (shiftData[channelToShift.id] || 0) >= newPosition) {
         shiftData[channelToShift.id] = (shiftData[channelToShift.id] || 0) + 1;
       }
@@ -74,8 +79,7 @@ class ChannelGroup {
   stageRemoveChannel(channel, shiftData, deletedChannels) {
     if (!channel) return;
     if (deletedChannels.includes(channel)) return;
-    let siblingChannels = this.parent.children;
-    siblingChannels.forEach(channelToShift => {
+    this.getSiblingChannels().forEach(channelToShift => {
       if (channelToShift.position + (shiftData[channelToShift.id] || 0) > channel.position) {
         shiftData[channelToShift.id] = (shiftData[channelToShift.id] || 0) - 1;
       }
@@ -108,7 +112,7 @@ class ChannelGroup {
       this.removeChannel(channel);
     });
 
-    let shifts = this.parent.children.map(channel => {
+    let shifts = this.getSiblingChannels().map(channel => {
       let shift = shiftData[channel.id];
       if (shift) {
         return channel.edit({position: channel.position + shift});
