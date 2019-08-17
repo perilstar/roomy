@@ -30,6 +30,10 @@ class Server {
     this.categoryMap[channelGroup.categoryID].push(channelGroup);
   }
 
+  getChannelGroup(groupName) {
+    return this.channelGroups[groupName];
+  }
+
   getChannelGroupByID(channelID) {
     for (let groupName in this.channelGroups) {
       for (let channel of this.channelGroups[groupName].channels) {

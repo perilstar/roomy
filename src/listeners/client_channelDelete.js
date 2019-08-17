@@ -16,8 +16,6 @@ class ChannelDeleteListener extends Listener {
     if (index != -1) {
       cg.channels.splice(index, 1);
     }
-    this.client.getServer(channel.guild.id).queueAdjustChannelGroups();
-
   }
 }
 
