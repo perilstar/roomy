@@ -10,23 +10,19 @@ class VoiceStateUpdateListener extends Listener {
     this.deletingChannels = [];
   }
 
+  async handleChannelChange(vc) {
+    if (vc) {
+      let channelGroup = this.client.getServer(vc.guild.id).getChannelGroupByID(vc.id);
+      if (!channelGroup) return;
+      
+      let categoryID = channelGroup.categoryID || "root";
+      this.client.getServer(vc.guild.id).queueAdjustCategory(categoryID);
+    }
+  }
+
   async exec(oldUser, newUser) {
-    let oldVC = oldUser.voiceChannel;
-    let newVC = newUser.voiceChannel;
-
-    if (oldVC) {
-      let channelGroup = this.client.getServer(oldVC.guild.id).getChannelGroupByID(oldVC.id);
-      if (channelGroup) {
-        this.client.getServer(oldVC.guild.id).queueAdjustChannelGroups();
-      }
-    }
-
-    if (newVC) {
-      let channelGroup = this.client.getServer(newVC.guild.id).getChannelGroupByID(newVC.id);
-      if (channelGroup) {
-        this.client.getServer(newVC.guild.id).queueAdjustChannelGroups();
-      }
-    }
+    this.handleChannelChange(oldUser.voiceChannel);
+    this.handleChannelChange(newUser.voiceChannel);
   }
 }
 

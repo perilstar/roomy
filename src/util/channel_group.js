@@ -11,6 +11,7 @@ class ChannelGroup {
     this.bitrate = source.bitrate * 1000;
     this.maxUsers = source.userLimit;
     this.parent = source.parent;
+    this.categoryID = source.parentID || "root";
   }
 
   getSiblingChannels() {
