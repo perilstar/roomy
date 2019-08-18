@@ -87,20 +87,18 @@ class ChannelGroup {
     return {hasAllPerms, message}
   }
 
-  async addChannel(position) {
-    let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
-
-    let newName = `${this.prefix} ${remainingChannels.length + 1}`;
+  async addChannel(position, name, remainingChannels) {
+ 
     let channelData = {
       type: 'voice',
       bitrate: this.bitrate,
       userLimit: this.maxUsers,
       parent: this.parent,
-      permissionOverwrites: this.channels[0].permissionOverwrites,
+      permissionOverwrites: remainingChannels[0].permissionOverwrites,
       position: position
     };
 
-    return this.guild.createChannel(newName, channelData)
+    return this.guild.createChannel(name, channelData)
   }
 
   async removeChannel(channel) {
@@ -118,13 +116,13 @@ class ChannelGroup {
     return channel.edit({position: channel.position + relativePosition});
   }
 
-  renameChannels(deletedChannels) {
-    let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
-
+  renameChannels(remainingChannels, channelPositions) {
     for (let i = 0; i < remainingChannels.length; i++) {
-      let channel = this.channels[i];
+      let channel = remainingChannels[i];
+      let calculatedPosition = channelPositions.find(position => position.channel == channel.id);
+      let position = calculatedPosition ? calculatedPosition.position : channel.position;
       if (channel.name != `${this.prefix} ${i + 1}`) {
-        remainingChannels[i].edit({name: `${this.prefix} ${i + 1}`});
+        remainingChannels[i].edit({name: `${this.prefix} ${i + 1}`, position});
       }
     }
   }
@@ -141,8 +139,7 @@ class ChannelGroup {
     return false;
   }
 
-  stageAddChannel(shiftData, deletedChannels) {
-    let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
+  stageAddChannel(shiftData, remainingChannels) {
     let lastRemainingChannel = remainingChannels[remainingChannels.length - 1];
 
     let shiftOffset = (shiftData[lastRemainingChannel.id] || 0)
@@ -159,7 +156,7 @@ class ChannelGroup {
     if (!channel) return;
     if (deletedChannels.includes(channel)) return;
     this.getSiblingChannels().forEach(channelToShift => {
-      if (channelToShift.position + (shiftData[channelToShift.id] || 0) > channel.position) {
+      if (channelToShift.position + (shiftData[channelToShift.id] || 0) > channel.position + (shiftData[channel.id] || 0)) {
         shiftData[channelToShift.id] = (shiftData[channelToShift.id] || 0) - 1;
       }
     });
@@ -180,7 +177,7 @@ class ChannelGroup {
     let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
     let lastRemainingChannel = remainingChannels[remainingChannels.length - 1];
     if (!lastRemainingChannel || (lastRemainingChannel.members.size && remainingChannels.length < this.maxChannels)) {
-      this.stageAddChannel(shiftData, deletedChannels);
+      this.stageAddChannel(shiftData, remainingChannels);
       addToGroups.push(this.groupName);
     }
 
@@ -196,27 +193,32 @@ class ChannelGroup {
       return false;
     }
 
-    let deletions = deletedChannels.map(channel => {
-      this.removeChannel(channel);
-    });
+    let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel));
 
-    let shifts = this.getSiblingChannels().map(channel => {
-      let shift = shiftData[channel.id];
-      if (shift) {
-        this.shiftChannel(channel, shift);
+    // Gotta update this first, so that the rename step doesn't fudge up the positions of renamed channels
+    // Channel positions for everything in the category that changed
+    let channelPositions = this.getSiblingChannels()
+      .map(channel => { return {channel: channel.id, position: channel.position + shiftData[channel.id]}; })
+      .filter(channel=>!isNaN(channel.position));
+
+    let deletions = deletedChannels.map(channel => {
+      if (this.channels.includes(channel)) {
+        return this.removeChannel(channel);
       }
     });
+    
+    let shifts = this.guild.setChannelPositions(channelPositions);
 
     let additions;
     if (addToGroups.includes(this.groupName)) {
-      let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
       let lastRemainingChannel = remainingChannels[remainingChannels.length - 1];
       let shiftOffset = (shiftData[lastRemainingChannel.id] || 0)
       let newPosition = lastRemainingChannel ? lastRemainingChannel.position + shiftOffset + 1 : 0;
-      add = this.addChannel(newPosition);
+      let newName = `${this.prefix} ${remainingChannels.length + 1}`;
+      additions = this.addChannel(newPosition, newName, remainingChannels);
     }
     
-    let renames = this.renameChannels(deletedChannels);
+    let renames = this.renameChannels(remainingChannels, channelPositions);
 
     let promises = [].concat(additions, deletions, shifts, renames);
 
@@ -225,7 +227,7 @@ class ChannelGroup {
         let newChannel = values[0];
         if (newChannel) this.channels.push(newChannel);
       });
-      
+
     return true;
   }
 

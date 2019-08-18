@@ -28,6 +28,8 @@ class HelpCommand extends Command {
       .addField('r!lcg', 'Lists all channel groups by group name.')
       .addField('r!dcg', 'Deletes a channel group by group name.')
       .addBlankField()
+      .addField('Ghost channels?', 'I\'m working on getting this fixed! For now, reload your Discord client with Control+R on Windows or Command+R on Mac and they\'ll go away.')
+      .addBlankField()
       .addField('Want to help support me? Donate:', 'https://paypal.me/perilstar')
       .setFooter(`v${process.env.npm_package_version} by perilstar`, peril.avatarURL);
 

@@ -16,7 +16,7 @@ class Server {
   async addChannelGroup(groupName, prefix, maxChannels, sourceChannelID) {
     let guild = this.client.guilds.get(this.id);
     let sourceChannel = guild.channels.get(sourceChannelID);
-    let newChannelGroup = new ChannelGroup(guild, groupName, prefix, maxChannels, [sourceChannel]);
+    let newChannelGroup = new ChannelGroup(this.client, guild, groupName, prefix, maxChannels, [sourceChannel]);
 
     this.channelGroups[groupName] = newChannelGroup;
 

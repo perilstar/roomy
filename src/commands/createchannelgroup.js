@@ -62,7 +62,6 @@ class CreateChannelGroupCommand extends Command {
     }
 
     await this.client.getServer(message.guild.id).addChannelGroup(
-      this.client,
       args.groupName,
       args.prefix,
       args.maxChannels,
