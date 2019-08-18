@@ -1,5 +1,6 @@
 class ChannelGroup {
-  constructor(guild, groupName, prefix, maxChannels, channels) {
+  constructor(client, guild, groupName, prefix, maxChannels, channels) {
+    this.client = client;
     this.guild = guild;
     this.groupName = groupName;
     this.prefix = prefix;
@@ -7,7 +8,6 @@ class ChannelGroup {
     this.channels = channels;
 
     let source = this.channels[0];
-    this.perms = source.permissionOverwrites;
     this.bitrate = source.bitrate * 1000;
     this.maxUsers = source.userLimit;
     this.parent = source.parent;
@@ -20,17 +20,87 @@ class ChannelGroup {
     return this.guild.channels.filter(channel=>!channel.parent && channel.type != "category");
   }
 
+  checkPermissions({shiftData, addToGroups, deletedChannels}) {
+    let hasAllPerms = true;
+    let msgLines = [];
+    msgLines.push("```");
+    msgLines.push(`Roomy ran into issues on your server ${this.guild.name} in channel group ${this.groupName}.`);
+    msgLines.push('');
+    msgLines.push("Problems:");
+    msgLines.push("---------");
+
+    let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
+
+    // Addition of channels
+    if (addToGroups[this.groupName]) {
+      let newName = `${this.prefix} ${remainingChannels.length + 1}`;
+
+      if (this.parent && !this.parent.permissionsFor(this.client.user).has('MANAGE_CHANNELS', true)) {
+        hasAllPerms = false;
+        msgLines.push(`Failed to create channel ${newName} in category ${this.parent.name}`);
+      }
+  
+      if (!this.guild.members.get(this.client.user.id).hasPermission('MANAGE_CHANNELS')) {
+        hasAllPerms = false;
+        msgLines.push(`Failed to create channel ${newName}`);
+      }  
+    }
+    
+    // Deletion of channels
+    for (let channel of deletedChannels) {
+      if (!channel) continue;
+
+      if (!channel.permissionsFor(this.client.user).has('MANAGE_CHANNELS', true)) {
+        hasAllPerms = false;
+        msgLines.push(`Failed to delete channel ${channel.name}`)
+      }
+    }
+
+    // Shifting of channels
+    for (let channel of this.getSiblingChannels()) {
+      if (!channel) continue;
+
+      if(shiftData[channel.id]) {
+        if (!channel.permissionsFor(this.client.user).has('MANAGE_CHANNELS', true)) {
+          hasAllPerms = false;
+          msgLines.push(`Failed to delete channel ${channel.name}`)
+        }
+      }
+    }
+
+    // Renaming of channels
+    for (let i = 0; i < remainingChannels.length; i++) {
+      let channel = this.channels[i];
+      if (channel.name != `${this.prefix} ${i + 1}`) {
+        if (!channel.permissionsFor(this.client.user).has('MANAGE_CHANNELS', true)) {
+          hasAllPerms = false;
+          msgLines.push(`Failed to rename channel ${channel.name} to ${this.prefix} ${i + 1}`);
+        }
+      }
+    }
+
+    msgLines.push('')
+    msgLines.push("You should check to make sure that you don't have any extra permission overwrites for the channels or the categories they're in.");
+    msgLines.push("```");
+
+    let message = msgLines.join('\n');
+    return {hasAllPerms, message}
+  }
+
   async addChannel(position) {
+    let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
+
+    let newName = `${this.prefix} ${remainingChannels.length + 1}`;
     let channelData = {
       type: 'voice',
       bitrate: this.bitrate,
       userLimit: this.maxUsers,
       parent: this.parent,
-      permissionOverwrites: this.perms,
+      permissionOverwrites: this.channels[0].permissionOverwrites,
       position: position
     };
 
-    return this.guild.createChannel(`${this.prefix} ${this.channels.length + 1}`, channelData)
+    return this.guild.createChannel(newName, channelData)
   }
 
   async removeChannel(channel) {
@@ -43,10 +113,18 @@ class ChannelGroup {
     channel.delete();
   }
 
-  renameChannels() {
-    for(let i = 0; i < this.channels.length; i++) {
-      if (this.channels[i].name != `${this.prefix} ${i + 1}`) {
-        this.channels[i].edit({name: `${this.prefix} ${i + 1}`});
+  async shiftChannel(channel, relativePosition) {
+    if (!channel) return;
+    return channel.edit({position: channel.position + relativePosition});
+  }
+
+  renameChannels(deletedChannels) {
+    let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
+
+    for (let i = 0; i < remainingChannels.length; i++) {
+      let channel = this.channels[i];
+      if (channel.name != `${this.prefix} ${i + 1}`) {
+        remainingChannels[i].edit({name: `${this.prefix} ${i + 1}`});
       }
     }
   }
@@ -88,9 +166,10 @@ class ChannelGroup {
     deletedChannels.push(channel);
   }
 
-  stageAdjustChannels({shiftData, addToGroups, deletedChannels}) {
+  stageAdjustChannels(adjustments) {
+    let {shiftData, addToGroups, deletedChannels} = adjustments;
     // Loop through all but the last channel in the list backwards
-    for(let i = this.channels.length - 2; i >= 0; i--) {
+    for (let i = this.channels.length - 2; i >= 0; i--) {
       // Stage deletion for any empty channels we see, as long as there are multiple channels
       if (!this.channels[i].members.size) {
         this.stageRemoveChannel(this.channels[i], shiftData, deletedChannels);
@@ -108,19 +187,27 @@ class ChannelGroup {
     return {shiftData, addToGroups, deletedChannels};
   }
 
-  async adjustChannels({shiftData, addToGroups, deletedChannels}) {
-    let del = deletedChannels.map(channel => {
+  async adjustChannels(adjustments) {
+    let {shiftData, addToGroups, deletedChannels} = adjustments;
+    let {hasAllPerms, message} = this.checkPermissions(adjustments);
+
+    if (!hasAllPerms) {
+      this.guild.owner.send(message);
+      return false;
+    }
+
+    let deletions = deletedChannels.map(channel => {
       this.removeChannel(channel);
     });
 
     let shifts = this.getSiblingChannels().map(channel => {
       let shift = shiftData[channel.id];
       if (shift) {
-        return channel.edit({position: channel.position + shift});
+        this.shiftChannel(channel, shift);
       }
     });
 
-    let add;
+    let additions;
     if (addToGroups.includes(this.groupName)) {
       let remainingChannels = this.channels.filter(channel => !deletedChannels.includes(channel))
       let lastRemainingChannel = remainingChannels[remainingChannels.length - 1];
@@ -129,14 +216,17 @@ class ChannelGroup {
       add = this.addChannel(newPosition);
     }
     
-    let promises = [].concat(add, del, shifts);
+    let renames = this.renameChannels(deletedChannels);
+
+    let promises = [].concat(additions, deletions, shifts, renames);
 
     await Promise.all(promises)
       .then(values => {
         let newChannel = values[0];
         if (newChannel) this.channels.push(newChannel);
       });
-    await this.renameChannels(deletedChannels);
+      
+    return true;
   }
 
   getStorageObject() {

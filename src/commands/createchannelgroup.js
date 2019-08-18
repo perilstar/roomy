@@ -57,7 +57,12 @@ class CreateChannelGroupCommand extends Command {
       return message.channel.send(`Error: \`${args.sourceChannel}\` is not a voice channel!`);
     }
 
+    if (!message.guild.channels.get(args.sourceChannel).permissionsFor(this.client.user).has('MANAGE_CHANNELS', true)) {
+      return message.channel.send(`Error: I don't have manage channel permissions for that channel! Check overwrites for the channel and category.`);
+    }
+
     await this.client.getServer(message.guild.id).addChannelGroup(
+      this.client,
       args.groupName,
       args.prefix,
       args.maxChannels,

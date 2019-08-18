@@ -76,7 +76,10 @@ class Server {
   }
 
   async adjustGroupSet(groupSet, adjustments) {
-    await Promise.all(groupSet.map(channelGroup=>channelGroup.adjustChannels(adjustments)));
+    await Promise.all(groupSet.map(channelGroup=>channelGroup.adjustChannels(adjustments)))
+      .then(values => {
+        return values;
+      });
   }
 
   async adjustCategoryImmediately(categoryID) {
@@ -86,13 +89,13 @@ class Server {
     let groupSet = this.categoryMap[categoryID];
 
     let adjustments = this.stageAdjustGroupSet(groupSet);
-    await this.adjustGroupSet(groupSet, adjustments); 
+    let adjustmentsSucceeded = await this.adjustGroupSet(groupSet, adjustments); 
 
     this.adjustingCategories.splice(this.adjustingCategories.indexOf(categoryID), 1);
     delete this.categoryTimers[categoryID];
 
     // Needed in case someone joined or left a channel while we were adjusting
-    if (this.categoryNeedsAdjusting(categoryID)) {
+    if (adjustmentsSucceeded && this.categoryNeedsAdjusting(categoryID)) {
       this.queueAdjustCategory(categoryID);
     }
     await this.save();
@@ -137,6 +140,7 @@ class Server {
 
       if (channels.length) {
         let cg = new ChannelGroup(
+          this.client,
           guild,
           groupName,
           data.prefix,
