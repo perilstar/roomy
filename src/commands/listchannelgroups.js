@@ -11,7 +11,7 @@ class ListChannelGroupsCommand extends Command {
 
   async exec(message, args) {
     let formatted = Object.values(this.client.getServer(message.guild.id).channelGroups)
-      .map(channelGroup=>`\`${channelGroup.groupName}: ${channelGroup.channels.length}\``)
+      .map(channelGroup=>`\`${channelGroup.groupName}: ${channelGroup.channels.length} channel(s)\``)
       .join(', ');
     return message.channel.send(`Channel groups: ${formatted}`);
   }
